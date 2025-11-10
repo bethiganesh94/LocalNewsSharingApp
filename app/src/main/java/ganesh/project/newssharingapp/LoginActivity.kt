@@ -39,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.database.FirebaseDatabase
+import kotlin.jvm.java
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +80,7 @@ fun LoginScreen()
                 style = TextStyle(fontSize = 52.sp, fontWeight = FontWeight.Bold)
             )
             Text(
-                text = "Login to your create Account",
+                text = "Login to use app",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 16.sp)
             )
@@ -149,6 +151,43 @@ fun LoginScreen()
                         }
 
                         else -> {
+
+                            val userEmail = email
+                            val userPassword = password
+
+                            val database = FirebaseDatabase.getInstance()
+                            val databaseReference = database.reference
+
+                            val sanitizedEmail = userEmail.replace(".", ",")
+
+                            databaseReference.child("Accounts").child(sanitizedEmail).get()
+                                .addOnSuccessListener { snapshot ->
+                                    if (snapshot.exists()) {
+                                        val travelGuideData =
+                                            snapshot.getValue(UserData::class.java)
+                                        travelGuideData?.let {
+                                            if (userPassword == it.password) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Login Successfull",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Incorrect Credentials",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "No User Found", Toast.LENGTH_SHORT)
+                                            .show()
+                                    }
+                                }.addOnFailureListener { exception ->
+                                    println("Error retrieving data: ${exception.message}")
+                                }
 
                         }
 

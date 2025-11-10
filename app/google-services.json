@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "882730515976",
+    "project_id": "newssharingapp",
+    "storage_bucket": "newssharingapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:882730515976:android:60ff6e625ef796e3a09bbd",
+        "android_client_info": {
+          "package_name": "ganesh.project.newssharingapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKhS2BCP-UyzLzBcCwGbo2SztXFeBpnug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
