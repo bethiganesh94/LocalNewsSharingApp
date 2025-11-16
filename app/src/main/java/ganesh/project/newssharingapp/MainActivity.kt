@@ -49,10 +49,7 @@ fun EntryScreenMA() {
 
     LaunchedEffect(Unit) {
         delay(3000)
-
         context.startActivity(Intent(context, LoginActivity::class.java))
-
-
     }
 
     EntryScreen()
