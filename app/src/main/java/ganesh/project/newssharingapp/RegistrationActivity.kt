@@ -1,6 +1,5 @@
 package ganesh.project.newssharingapp
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -37,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.database.FirebaseDatabase
@@ -50,6 +50,12 @@ class RegistrationActivity : ComponentActivity() {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun RegistrationScreenPreview() {
+    RegistrationScreen()
+}
+
 @Composable
 fun RegistrationScreen() {
 
@@ -59,7 +65,7 @@ fun RegistrationScreen() {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val context = LocalContext.current as Activity
+    val context = LocalContext.current.findActivity()
 
 
     Column(
@@ -229,7 +235,7 @@ fun RegistrationScreen() {
                                             "Registration Successful",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        context.startActivity(
+                                        context!!.startActivity(
                                             Intent(
                                                 context,
                                                 LoginActivity::class.java
@@ -295,7 +301,7 @@ fun RegistrationScreen() {
             Text(
                 modifier = Modifier
                     .clickable {
-                        context.startActivity(Intent(context, LoginActivity::class.java))
+                        context!!.startActivity(Intent(context, LoginActivity::class.java))
                         context.finish()
                     },
                 text = "Login",

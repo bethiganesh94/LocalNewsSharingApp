@@ -1,6 +1,8 @@
 package ganesh.project.newssharingapp
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -37,10 +39,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.database.FirebaseDatabase
-import kotlin.jvm.java
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,22 +54,25 @@ class LoginActivity : ComponentActivity() {
 }
 
 
+@Preview(showBackground = true)
 @Composable
-fun LoginScreen()
-{
+fun LoginScreenPreview() {
+    LoginScreen()
+}
 
+@Composable
+fun LoginScreen() {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val context = LocalContext.current as Activity
-
+    val context = LocalContext.current.findActivity()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(color = colorResource(R.color.bg_main)),
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
+    ) {
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -172,7 +177,12 @@ fun LoginScreen()
                                                     "Login Successfull",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
-                                                context.startActivity(Intent(context, HomeActivity::class.java))
+                                                context!!.startActivity(
+                                                    Intent(
+                                                        context,
+                                                        HomeActivity::class.java
+                                                    )
+                                                )
                                                 context.finish()
 
                                             } else {
@@ -233,7 +243,7 @@ fun LoginScreen()
             Text(
                 modifier = Modifier
                     .clickable {
-                        context.startActivity(Intent(context, RegistrationActivity::class.java))
+                        context!!.startActivity(Intent(context, RegistrationActivity::class.java))
                         context.finish()
                     },
                 text = "Create Account",
@@ -247,4 +257,10 @@ fun LoginScreen()
 
         Spacer(modifier = Modifier.height(46.dp))
     }
+}
+
+fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

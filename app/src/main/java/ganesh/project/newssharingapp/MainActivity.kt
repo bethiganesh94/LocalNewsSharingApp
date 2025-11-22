@@ -103,3 +103,9 @@ fun EntryScreen() {
     }
 
 }
+
+@Preview(showBackground = true)
+@Composable
+fun EntryScreenMAPreview() {
+    EntryScreen()
+}
