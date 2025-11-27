@@ -88,6 +88,10 @@ fun EntryScreen() {
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Spacer(modifier = Modifier.height(32.dp))
+
 
             Text(
                 text = "News Sharing App\nby Ganesh",
