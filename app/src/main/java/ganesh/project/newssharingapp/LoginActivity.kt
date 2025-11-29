@@ -3,11 +3,7 @@ package ganesh.project.newssharingapp
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.Intent
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,30 +38,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.google.firebase.database.FirebaseDatabase
-
-class LoginActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            LoginScreen()
-        }
-    }
-}
 
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen()
+    LoginScreen(navController = NavHostController(LocalContext.current))
 }
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     val context = LocalContext.current.findActivity()
+
+    val context1 = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -168,22 +159,31 @@ fun LoginScreen() {
                             databaseReference.child("Accounts").child(sanitizedEmail).get()
                                 .addOnSuccessListener { snapshot ->
                                     if (snapshot.exists()) {
-                                        val travelGuideData =
+                                        val newsData =
                                             snapshot.getValue(UserData::class.java)
-                                        travelGuideData?.let {
+                                        newsData?.let {
                                             if (userPassword == it.password) {
+
+                                                UserPrefs.markLoginStatus(context1, true)
+                                                UserPrefs.saveEmail(
+                                                    context1,
+                                                    email = userEmail
+                                                )
+                                                UserPrefs.saveName(context1, it.fullname)
+
+
+
                                                 Toast.makeText(
                                                     context,
                                                     "Login Successfull",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
-                                                context!!.startActivity(
-                                                    Intent(
-                                                        context,
-                                                        HomeActivity::class.java
-                                                    )
-                                                )
-                                                context.finish()
+
+                                                navController.navigate(AppScreens.Home.route) {
+                                                    popUpTo(AppScreens.Login.route) {
+                                                        inclusive = true
+                                                    }
+                                                }
 
                                             } else {
                                                 Toast.makeText(
@@ -243,8 +243,11 @@ fun LoginScreen() {
             Text(
                 modifier = Modifier
                     .clickable {
-                        context!!.startActivity(Intent(context, RegistrationActivity::class.java))
-                        context.finish()
+                        navController.navigate(AppScreens.Register.route) {
+                            popUpTo(AppScreens.Login.route) {
+                                inclusive = true
+                            }
+                        }
                     },
                 text = "Create Account",
                 textAlign = TextAlign.Center,

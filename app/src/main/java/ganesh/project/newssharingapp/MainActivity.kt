@@ -2,10 +2,12 @@ package ganesh.project.newssharingapp
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -30,6 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import ganesh.project.newssharingapp.ui.theme.CreatePostScreen
 import kotlinx.coroutines.delay
 import kotlin.jvm.java
 
@@ -38,22 +45,74 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            EntryScreenMA()
+            MyAppNavGraph()
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun EntryScreenMA() {
-    val context = LocalContext.current as Activity
+fun MyAppNavGraph() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = AppScreens.Home.route
+    ) {
+        composable(AppScreens.Splash.route) {
+            LoadingScreenCheck(navController = navController)
+        }
+
+        composable(AppScreens.Login.route) {
+            LoginScreen(navController = navController)
+        }
+
+        composable(AppScreens.Register.route) {
+            RegistrationScreen(navController = navController)
+        }
+
+        composable(AppScreens.Home.route) {
+            HomeScreen(navController = navController)
+        }
+
+        composable(AppScreens.CreatePost.route) {
+            CreatePostScreen(navController = navController)
+        }
+
+
+
+    }
+
+}
+
+@Composable
+fun LoadingScreenCheck(navController: NavController) {
+
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         delay(3000)
-        context.startActivity(Intent(context, LoginActivity::class.java))
+
+        if (UserPrefs.checkLoginStatus(context)) {
+            navController.navigate(AppScreens.Home.route) {
+                popUpTo(AppScreens.Splash.route) {
+                    inclusive = true
+                }
+            }
+        } else {
+            navController.navigate(AppScreens.Login.route) {
+                popUpTo(AppScreens.Splash.route) {
+                    inclusive = true
+                }
+            }
+        }
+
     }
 
     EntryScreen()
 }
+
+
 
 @Composable
 fun EntryScreen() {

@@ -39,25 +39,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.google.firebase.database.FirebaseDatabase
+import kotlin.jvm.java
 
-class RegistrationActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            RegistrationScreen()
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
 fun RegistrationScreenPreview() {
-    RegistrationScreen()
+    RegistrationScreen(navController = NavHostController(LocalContext.current))
 }
 
 @Composable
-fun RegistrationScreen() {
+fun RegistrationScreen(navController: NavController) {
 
     var name by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
@@ -215,7 +210,7 @@ fun RegistrationScreen() {
 
                         else -> {
 
-                            val travelGuideData = UserData(
+                            val userData = UserData(
                                 fullname = name,
                                 email = email,
                                 city = city,
@@ -225,8 +220,8 @@ fun RegistrationScreen() {
                             val db = FirebaseDatabase.getInstance()
                             val ref = db.getReference("Accounts")
 
-                            ref.child(travelGuideData.email.replace(".", ","))
-                                .setValue(travelGuideData)
+                            ref.child(userData.email.replace(".", ","))
+                                .setValue(userData)
                                 .addOnCompleteListener { task ->
                                     if (task.isSuccessful) {
 
@@ -235,13 +230,11 @@ fun RegistrationScreen() {
                                             "Registration Successful",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        context!!.startActivity(
-                                            Intent(
-                                                context,
-                                                LoginActivity::class.java
-                                            )
-                                        )
-                                        context.finish()
+                                        navController.navigate(AppScreens.Login.route) {
+                                            popUpTo(AppScreens.Register.route) {
+                                                inclusive = true
+                                            }
+                                        }
                                     } else {
                                         Toast.makeText(
                                             context,
@@ -301,8 +294,13 @@ fun RegistrationScreen() {
             Text(
                 modifier = Modifier
                     .clickable {
-                        context!!.startActivity(Intent(context, LoginActivity::class.java))
-                        context.finish()
+
+                        navController.navigate(AppScreens.Login.route) {
+                            popUpTo(AppScreens.Register.route) {
+                                inclusive = true
+                            }
+                        }
+
                     },
                 text = "Login",
                 textAlign = TextAlign.Center,
