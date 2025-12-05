@@ -1,9 +1,18 @@
-package ganesh.project.newssharingapp.ui.theme
+package ganesh.project.newssharingapp.screens
 
+import android.Manifest
+import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +20,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
@@ -38,15 +50,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.storage.FirebaseStorage
+import ganesh.project.newssharingapp.R
+
 import ganesh.project.newssharingapp.UserPrefs
+import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
+import ganesh.project.newssharingapp.ui.theme.Purple40
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -55,6 +78,31 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePostScreen(navController: NavController) {
+
+    val context = LocalContext.current
+
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
+
+    val takePicturePreview = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val file = saveBitmapToCache(context, bitmap)
+            photoUri = Uri.fromFile(file)
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            takePicturePreview.launch()
+        } else {
+            Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
@@ -107,6 +155,8 @@ fun CreatePostScreen(navController: NavController) {
         var selectedCategory by remember { mutableStateOf("") }
         var categoryExpanded by remember { mutableStateOf(false) }
 
+        var imageSelected by remember { mutableStateOf(false) }
+
         val context = LocalContext.current
         val calendar = Calendar.getInstance()
         val dateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
@@ -143,7 +193,7 @@ fun CreatePostScreen(navController: NavController) {
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = Main_BG_Color
                     )
                 )
             },
@@ -152,7 +202,8 @@ fun CreatePostScreen(navController: NavController) {
                     modifier = Modifier
                         .padding(innerPadding)
                         .padding(16.dp)
-                        .fillMaxSize(),
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
 
                 ) {
@@ -242,6 +293,56 @@ fun CreatePostScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (photoUri != null) {
+
+                            imageSelected = true
+
+                            Image(
+                                painter = rememberAsyncImagePainter(photoUri),
+                                contentDescription = "Captured News Image",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.add_image),
+                                contentDescription = "News Image",
+                                modifier = Modifier
+                                    .size(120.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(
+                            onClick = {
+                                when (PackageManager.PERMISSION_GRANTED) {
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.CAMERA
+                                    ) -> {
+                                        takePicturePreview.launch()
+                                    }
+
+                                    else -> {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Purple40)
+                        ) {
+                            Text("Add Photo")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
 
                     Button(
                         onClick = {
@@ -255,21 +356,34 @@ fun CreatePostScreen(navController: NavController) {
                                     .show()
                             } else {
 
-                                val newsData1 = NewsData(
-                                    newsTitle = headline,
-                                    newsCategory = selectedCategory,
-                                    newsContent = description,
-                                    place = place,
-                                    date = date
-                                )
 
-                                Toast.makeText(
-                                    context,
-                                    "Posted News Successfully.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                if (imageSelected) {
 
-//                                uploadNewsWithImage(newsData = newsData1, context = context)
+                                    val newsData1 = NewsData(
+                                        newsTitle = headline,
+                                        newsCategory = selectedCategory,
+                                        newsContent = description,
+                                        place = place,
+                                        date = date
+                                    )
+
+
+//                                    uploadNewsWithImage(
+//                                        newsData = newsData1,
+//                                        photoUri!!,
+//                                        context = context
+//                                    )
+                                    uploadNewsWithImage(
+                                        newsData = newsData1,
+                                        context = context
+                                    )
+                                }else{
+                                    Toast.makeText(
+                                        context,
+                                        "Posted News Successfully.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
 
                         },
@@ -295,7 +409,7 @@ fun CreatePostScreen(navController: NavController) {
 @Composable
 fun CreatePostScreenPreview() {
     MaterialTheme {
-        CreatePostScreen(navController = NavHostController(LocalContext.current))
+//        CreatePostScreen(navController = NavHostController(LocalContext.current))
     }
 }
 
@@ -313,6 +427,62 @@ data class NewsData(
 
 fun uploadNewsWithImage(
     newsData: NewsData,
+    selectedImageUri: Uri,
+    context: Context
+) {
+    val storageRef = FirebaseStorage.getInstance().reference
+    val databaseRef = FirebaseDatabase.getInstance().reference
+    val userName = UserPrefs.getName(context)
+    val userEmail = UserPrefs.getEmail(context).replace(".", ",")
+
+
+    val newsId = databaseRef.child("NewsPosts").push().key ?: return
+    val imageRef = storageRef.child("NewsPosts/$newsId/news_image.jpg")
+    imageRef.putFile(selectedImageUri)
+        .continueWithTask { task ->
+            if (!task.isSuccessful) {
+                task.exception?.let { throw it }
+            }
+            imageRef.downloadUrl
+        }
+        .addOnSuccessListener { downloadUri ->
+            val newsMap = mapOf(
+                "newsId" to newsId,
+                "newsTitle" to newsData.newsTitle,
+                "newsCategory" to newsData.newsCategory,
+                "newsContent" to newsData.newsContent,
+                "imageUrl" to downloadUri.toString(),
+                "place" to newsData.place,
+                "date" to newsData.date,
+                "timestamp" to System.currentTimeMillis(),
+                "author" to userName
+            )
+
+            databaseRef.child("NewsPosts/$userEmail").child(newsId)
+                .setValue(newsMap)
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Posted News Successfully.", Toast.LENGTH_SHORT).show()
+                    (context as Activity).finish()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Failed to save news.", Toast.LENGTH_SHORT).show()
+                }
+        }
+        .addOnFailureListener {
+            Toast.makeText(context, "Failed to upload image.", Toast.LENGTH_SHORT).show()
+        }
+}
+
+fun saveBitmapToCache(context: Context, bitmap: Bitmap): File {
+    val file = File(context.cacheDir, "photo_${System.currentTimeMillis()}.jpg")
+    file.outputStream().use {
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
+    }
+    return file
+}
+
+fun uploadNewsWithImage(
+    newsData: NewsData,
     context: Context
 ) {
     val databaseRef = FirebaseDatabase.getInstance().reference
@@ -327,8 +497,8 @@ fun uploadNewsWithImage(
         "newsCategory" to newsData.newsCategory,
         "newsContent" to newsData.newsContent,
         "imageUrl" to "https://thumbs.dreamstime.com/b/breaking-news-global-updates-insights-wallpaper-366068573.jpg",
-        "lat" to newsData.place,
-        "lng" to newsData.date,
+        "place" to newsData.place,
+        "date" to newsData.date,
         "timestamp" to System.currentTimeMillis(),
         "author" to userName
     )

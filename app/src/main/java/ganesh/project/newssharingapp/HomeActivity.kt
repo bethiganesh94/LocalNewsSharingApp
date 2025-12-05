@@ -19,9 +19,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PermIdentity
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,11 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +51,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import ganesh.project.newssharingapp.network.NewsViewModel
+import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 import kotlinx.coroutines.delay
 
 @Preview(showBackground = true)
@@ -73,8 +79,18 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
                         fontWeight = FontWeight.Bold
                     )
                 },
+                actions = {
+                    IconButton(onClick = { /* Navigate to profile screen */ }) {
+                        Icon(
+                            imageVector = Icons.Outlined.PermIdentity,
+                            contentDescription = "Profile",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Main_BG_Color
                 )
             )
         },
@@ -107,89 +123,15 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
                     AutoSlider(newsList)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp, horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.clickable {
-                            navController.navigate(AppScreens.CreatePost.route)
-                        }
-                    )
-                    {
-
-                        Image(
-                            painter = painterResource(id = R.drawable.icon_news_sharing),
-                            contentDescription = "News Sharing",
-                            modifier = Modifier
-                                .size(62.dp)
-                        )
-                        Text(
-                            text = "Create Post",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-
-                        )
-
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    )
-                    {
-
-                        Image(
-                            painter = painterResource(id = R.drawable.icon_news_sharing),
-                            contentDescription = "News Sharing",
-                            modifier = Modifier
-                                .size(62.dp)
-                        )
-                        Text(
-                            text = "Saved News",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-
-                        )
-
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    )
-                    {
-
-                        Image(
-                            painter = painterResource(id = R.drawable.icon_news_sharing),
-                            contentDescription = "News Sharing",
-                            modifier = Modifier
-                                .size(62.dp)
-                        )
-                        Text(
-                            text = "My Post",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-
-                        )
-
-                    }
-
-
-                }
+                HomeOptionsGrid(
+                    onLocalNewsClick = { navController.navigate(AppScreens.AllPosts.route) },
+                    onSavedNewsClick = { navController.navigate(AppScreens.SavedPosts.route) },
+                    onCreatePostClick = { navController.navigate(AppScreens.CreatePost.route) },
+                    onMyPostsClick = { navController.navigate(AppScreens.MyPosts.route) }
+                )
 
 
             }
@@ -199,6 +141,102 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
 
 
 }
+
+@Composable
+fun HomeOptionsGrid(
+    onLocalNewsClick: () -> Unit = {},
+    onSavedNewsClick: () -> Unit = {},
+    onCreatePostClick: () -> Unit = {},
+    onMyPostsClick: () -> Unit = {}
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OptionCard(
+                title = "Local News",
+                image = R.drawable.icon_localnews,
+                modifier = Modifier.weight(1f),
+                onClick = onLocalNewsClick
+            )
+            OptionCard(
+                title = "Saved News",
+                image = R.drawable.icon_savednews,
+                modifier = Modifier.weight(1f),
+                onClick = onSavedNewsClick
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OptionCard(
+                title = "Create Post",
+                image = R.drawable.icon_createpost,
+                modifier = Modifier.weight(1f),
+                onClick = onCreatePostClick
+            )
+            OptionCard(
+                title = "My Posts",
+                image = R.drawable.icon_myposts,
+                modifier = Modifier.weight(1f),
+                onClick = onMyPostsClick
+            )
+        }
+    }
+}
+
+
+@Composable
+fun OptionCard(
+    title: String,
+    image: Int,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFECE5FF)
+        ),
+        modifier = modifier   // <-- weight is passed from parent
+            .height(150.dp)
+            .clickable { onClick() }
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize()
+        ) {
+
+            Image(
+                painter = painterResource(id = image),
+                contentDescription = title,
+                modifier = Modifier.size(50.dp)
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
 
 
 @OptIn(ExperimentalFoundationApi::class)

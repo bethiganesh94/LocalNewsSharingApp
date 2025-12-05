@@ -1,7 +1,5 @@
 package ganesh.project.newssharingapp
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,9 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,9 +31,11 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import ganesh.project.newssharingapp.ui.theme.CreatePostScreen
+import ganesh.project.newssharingapp.screens.AllPostsScreen
+import ganesh.project.newssharingapp.screens.CreatePostScreen
+import ganesh.project.newssharingapp.screens.MyPostsScreen
+import ganesh.project.newssharingapp.screens.SavedNewsScreen
 import kotlinx.coroutines.delay
-import kotlin.jvm.java
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +54,7 @@ fun MyAppNavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = AppScreens.Home.route
+        startDestination = AppScreens.Splash.route
     ) {
         composable(AppScreens.Splash.route) {
             LoadingScreenCheck(navController = navController)
@@ -78,6 +75,19 @@ fun MyAppNavGraph() {
         composable(AppScreens.CreatePost.route) {
             CreatePostScreen(navController = navController)
         }
+
+        composable(AppScreens.MyPosts.route) {
+            MyPostsScreen(navController = navController)
+        }
+
+        composable(AppScreens.AllPosts.route) {
+            AllPostsScreen(navController = navController)
+        }
+
+        composable(AppScreens.SavedPosts.route) {
+            SavedNewsScreen(navController = navController)
+        }
+
 
 
 
