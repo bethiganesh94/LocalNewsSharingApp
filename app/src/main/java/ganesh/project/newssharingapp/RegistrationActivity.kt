@@ -1,11 +1,7 @@
 package ganesh.project.newssharingapp
 
 import android.app.DatePickerDialog
-import android.content.Intent
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +43,6 @@ import com.google.firebase.database.FirebaseDatabase
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.jvm.java
 
 
 @Preview(showBackground = true)
@@ -71,11 +66,14 @@ fun RegistrationScreen(navController: NavController) {
 
     var dobDate by remember { mutableStateOf("") }
 
-
     val calendar = Calendar.getInstance()
     val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
-    fun openDatePicker(onSelect: (String) -> Unit, minDate: Long? = null) {
+    fun openDatePicker(
+        onSelect: (String) -> Unit,
+        minDate: Long? = null,
+        maxDate: Long? = null
+    ) {
         val dp = DatePickerDialog(
             context1,
             { _, year, month, day ->
@@ -88,7 +86,13 @@ fun RegistrationScreen(navController: NavController) {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
-        if (minDate != null) dp.datePicker.minDate = minDate
+
+        // Allow selecting date from minimum date
+        minDate?.let { dp.datePicker.minDate = it }
+
+        // Allow selecting date up to maximum date
+        maxDate?.let { dp.datePicker.maxDate = it }
+
         dp.show()
     }
 
@@ -172,14 +176,7 @@ fun RegistrationScreen(navController: NavController) {
             label = "Date of Birth",
             value = dobDate,
             onClick = {
-                val today = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-
-                openDatePicker({ dobDate = it }, today)
+                openDatePicker({ dobDate = it }, 1900)
             }
         )
 
@@ -233,6 +230,7 @@ fun RegistrationScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(6.dp))
 
+
         OutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
@@ -265,7 +263,8 @@ fun RegistrationScreen(navController: NavController) {
                         name.isEmpty() -> {
                             Toast.makeText(context, " Please Enter Name", Toast.LENGTH_SHORT).show()
                         }
-                        dobDate.isBlank() ->{
+
+                        dobDate.isBlank() -> {
                             Toast.makeText(context, " Please Select DOB", Toast.LENGTH_SHORT).show()
                         }
 
