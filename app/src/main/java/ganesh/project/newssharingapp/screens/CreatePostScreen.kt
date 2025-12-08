@@ -1,17 +1,16 @@
 package ganesh.project.newssharingapp.screens
 
-import android.Manifest
 import android.app.Activity
 import android.app.DatePickerDialog
+import android.content.ContentResolver
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +30,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -40,17 +40,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -58,18 +59,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import ganesh.project.newssharingapp.R
-
 import ganesh.project.newssharingapp.UserPrefs
 import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 import ganesh.project.newssharingapp.ui.theme.Purple40
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -82,328 +89,222 @@ fun CreatePostScreen(navController: NavController) {
     val context = LocalContext.current
 
     var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var isUploading by remember { mutableStateOf(false) }
 
-
-    val takePicturePreview = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            val file = saveBitmapToCache(context, bitmap)
-            photoUri = Uri.fromFile(file)
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            photoUri = uri
         }
     }
 
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            takePicturePreview.launch()
-        } else {
-            Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
-        }
-    }
+    var headline by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var place by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
 
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxSize()
-    ) {
+    val categories =
+        listOf("Breaking News", "Politics", "Sports", "Local News", "Education", "Emergency")
+    var selectedCategory by remember { mutableStateOf("") }
+    var categoryExpanded by remember { mutableStateOf(false) }
 
-        var headline by remember { mutableStateOf("") }
-        var description by remember { mutableStateOf("") }
-        var place by remember { mutableStateOf("") }
-        var date by remember { mutableStateOf("") }
+    val calendar = Calendar.getInstance()
+    val dateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
+    val coroutineScope = rememberCoroutineScope()
 
-        val categories = listOf(
-            "Breaking News",
-            "Politics",
-            "Business",
-            "Technology",
-            "Sports",
-            "Health",
-            "Entertainment",
-            "Science",
-            "World News",
-            "Local News",
-            "Education",
-            "Environment",
-            "Lifestyle",
-            "Crime & Safety",
-            "Weather",
-            "Top Stories",
-            "Headlines",
-            "Trending",
-            "Opinion / Editorial",
-            "Finance",
-            "Stock Market",
-            "Startups",
-            "Innovation",
-            "Automobiles",
-            "Space",
-            "Research",
-            "Culture",
-            "Art & Media",
-            "Travel",
-            "Food",
-            "Fashion",
-            "Real Estate",
-            "Agriculture",
-            "Announcement",
-            "Update",
-            "Emergency"
-        )
-        var selectedCategory by remember { mutableStateOf("") }
-        var categoryExpanded by remember { mutableStateOf(false) }
+    val datePicker = DatePickerDialog(
+        context,
+        { _, y, m, d ->
+            calendar.set(y, m, d)
+            date = dateFormatter.format(calendar.time)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
 
-        var imageSelected by remember { mutableStateOf(false) }
-
-        val context = LocalContext.current
-        val calendar = Calendar.getInstance()
-        val dateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-
-        val datePicker = DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                calendar.set(year, month, day)
-                date = dateFormatter.format(calendar.time)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = "Create Post",
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Create Post", color = MaterialTheme.colorScheme.onPrimary) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Main_BG_Color
-                    )
-                )
-            },
-            content = { innerPadding ->
-                Column(
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Main_BG_Color)
+            )
+        }
+    ) { padding ->
+
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+
+            OutlinedTextField(
+                value = headline,
+                onValueChange = { headline = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Headline") })
+
+            ExposedDropdownMenuBox(
+                expanded = categoryExpanded,
+                onExpandedChange = { categoryExpanded = !categoryExpanded }) {
+                OutlinedTextField(
+                    value = selectedCategory,
+                    onValueChange = {},
+                    readOnly = true,
                     modifier = Modifier
-                        .padding(innerPadding)
-                        .padding(16.dp)
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-
-                ) {
-
-                    Text(text = "Headline", fontWeight = FontWeight.SemiBold)
-                    OutlinedTextField(
-                        value = headline,
-                        onValueChange = { headline = it },
-                        placeholder = { Text("Enter headline") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-
-                    Text(text = "Category", fontWeight = FontWeight.SemiBold)
-
-                    ExposedDropdownMenuBox(
-                        expanded = categoryExpanded,
-                        onExpandedChange = { categoryExpanded = !categoryExpanded }
-                    ) {
-                        OutlinedTextField(
-                            value = selectedCategory,
-                            onValueChange = { /* readOnly */ },
-                            readOnly = true,
-                            placeholder = { Text("Select category") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    placeholder = { Text("Select Category") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) }
+                )
+                ExposedDropdownMenu(
+                    expanded = categoryExpanded,
+                    onDismissRequest = { categoryExpanded = false }) {
+                    categories.forEach {
+                        DropdownMenuItem(
+                            text = { Text(it) },
+                            onClick = { selectedCategory = it; categoryExpanded = false }
                         )
-
-                        ExposedDropdownMenu(
-                            expanded = categoryExpanded,
-                            onDismissRequest = { categoryExpanded = false }
-                        ) {
-                            categories.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(option) },
-                                    onClick = {
-                                        selectedCategory = option
-                                        categoryExpanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                            }
-                        }
-                    }
-                    Text(text = "Description", fontWeight = FontWeight.SemiBold)
-                    OutlinedTextField(
-                        value = description,
-                        onValueChange = { description = it },
-                        placeholder = { Text("Enter description") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp),
-                        maxLines = 6
-                    )
-
-
-                    Text(text = "Place", fontWeight = FontWeight.SemiBold)
-                    OutlinedTextField(
-                        value = place,
-                        onValueChange = { place = it },
-                        placeholder = { Text("Enter place") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-
-
-
-                    Text(text = "Date", fontWeight = FontWeight.SemiBold)
-                    OutlinedTextField(
-                        value = date,
-                        onValueChange = {},
-                        readOnly = true,
-                        placeholder = { Text("Select date") },
-                        trailingIcon = {
-                            IconButton(onClick = { datePicker.show() }) {
-                                Icon(Icons.Default.DateRange, contentDescription = "Pick date")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (photoUri != null) {
-
-                            imageSelected = true
-
-                            Image(
-                                painter = rememberAsyncImagePainter(photoUri),
-                                contentDescription = "Captured News Image",
-                                modifier = Modifier
-                                    .size(120.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Image(
-                                painter = painterResource(id = R.drawable.add_image),
-                                contentDescription = "News Image",
-                                modifier = Modifier
-                                    .size(120.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = {
-                                when (PackageManager.PERMISSION_GRANTED) {
-                                    ContextCompat.checkSelfPermission(
-                                        context,
-                                        Manifest.permission.CAMERA
-                                    ) -> {
-                                        takePicturePreview.launch()
-                                    }
-
-                                    else -> {
-                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Purple40)
-                        ) {
-                            Text("Add Photo")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-
-                    Button(
-                        onClick = {
-
-                            if (headline.isBlank() || selectedCategory.isBlank() || place.isBlank() || description.isBlank() || date.isBlank()) {
-                                Toast.makeText(
-                                    context,
-                                    "All Fields  are Mandatory",
-                                    Toast.LENGTH_SHORT
-                                )
-                                    .show()
-                            } else {
-
-
-                                if (imageSelected) {
-
-                                    val newsData1 = NewsData(
-                                        newsTitle = headline,
-                                        newsCategory = selectedCategory,
-                                        newsContent = description,
-                                        place = place,
-                                        date = date
-                                    )
-
-
-//                                    uploadNewsWithImage(
-//                                        newsData = newsData1,
-//                                        photoUri!!,
-//                                        context = context
-//                                    )
-                                    uploadNewsWithImage(
-                                        newsData = newsData1,
-                                        context = context
-                                    )
-                                }else{
-                                    Toast.makeText(
-                                        context,
-                                        "Posted News Successfully.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-
-                        },
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .height(52.dp)
-                            .width(180.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(text = "Post", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
-        )
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                placeholder = { Text("Description") },
+                maxLines = 6
+            )
+
+            OutlinedTextField(
+                value = place,
+                onValueChange = { place = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Place") })
+
+            OutlinedTextField(
+                value = date,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Date") },
+                trailingIcon = {
+                    IconButton(onClick = { datePicker.show() }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Pick date")
+                    }
+                }
+            )
+
+            // Image Selection
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (photoUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(photoUri),
+                        contentDescription = "",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.add_image),
+                        contentDescription = "",
+                        modifier = Modifier.size(120.dp)
+                    )
+                }
+
+                Button(
+                    onClick = { pickImageLauncher.launch("image/*") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Purple40)
+                ) {
+                    Text("Select Image")
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // POST BUTTON
+            Button(
+                onClick = {
+                    if (headline.isBlank() || selectedCategory.isBlank() || place.isBlank() || description.isBlank() || date.isBlank()) {
+                        Toast.makeText(context, "All fields are required!", Toast.LENGTH_SHORT)
+                            .show()
+                    } else if (photoUri == null) {
+                        Toast.makeText(context, "Please select an image!", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        isUploading = true
+
+                        // Upload process
+                        val newsData = NewsData(
+                            newsTitle = headline,
+                            newsCategory = selectedCategory,
+                            newsContent = description,
+                            place = place,
+                            date = date
+                        )
+
+                        // Coroutine launch
+
+                        coroutineScope.launch {
+
+                            val bytes = readBytesFromUri(photoUri!!, context.contentResolver)
+                            // Convert to Base64 (ImgBB expects base64 without data URI prefix)
+                            val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
+
+                            val imageUrl = uploadToImgBB(base64)
+
+                            if (imageUrl != null) {
+                                uploadPostToFirebase(newsData, imageUrl, context) {
+                                    isUploading = false
+                                }
+                            } else {
+                                Toast.makeText(context, "Image upload failed!", Toast.LENGTH_SHORT)
+                                    .show()
+                                isUploading = false
+                            }
+                        }
+
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .width(180.dp)
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Main_BG_Color)
+            ) {
+                if (isUploading)
+                    CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
+                else
+                    Text("Post", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
@@ -513,5 +414,118 @@ fun uploadNewsWithImage(
         }
         .addOnFailureListener {
             Toast.makeText(context, "Failed to save news.", Toast.LENGTH_SHORT).show()
+        }
+}
+
+suspend fun readBytesFromUri(uri: Uri, contentResolver: ContentResolver): ByteArray =
+    withContext(Dispatchers.IO) {
+        val input: InputStream? = contentResolver.openInputStream(uri)
+        val baos = ByteArrayOutputStream()
+        input?.use { stream ->
+            val buffer = ByteArray(4096)
+            var read: Int
+            while (stream.read(buffer).also { read = it } != -1) {
+                baos.write(buffer, 0, read)
+            }
+        }
+        baos.toByteArray()
+    }
+private const val IMGBB_API_KEY = "dd2c6f23d315032050b31f06adcfaf3b" // <- your key (from user)
+
+// ----------------- Helper: Upload to ImgBB (returns image URL) -----------------
+suspend fun uploadToImgBB(base64Image: String): String? = withContext(Dispatchers.IO) {
+    try {
+        val client = OkHttpClient()
+
+        // ImgBB accepts 'image' param as base64 string
+        val form = FormBody.Builder()
+            .add("key", IMGBB_API_KEY)
+            .add("image", base64Image)
+            .build()
+
+        val request = Request.Builder()
+            .url("https://api.imgbb.com/1/upload")
+            .post(form)
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string() ?: return@withContext null
+            if (!response.isSuccessful) return@withContext null
+
+            val json = JSONObject(body)
+            // Look for data -> url or display_url
+            val data = json.optJSONObject("data")
+            return@withContext data?.optString("url") ?: data?.optString("display_url")
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return@withContext null
+    }
+}
+
+fun uploadToImgBBOld(imageUri: Uri, context: Context): String? {
+    return try {
+        val apiKey = "dd2c6f23d315032050b31f06adcfaf3b"   // <-- Replace with your key
+
+        val inputStream = context.contentResolver.openInputStream(imageUri)
+        val bytes = inputStream?.readBytes() ?: return null
+        val base64Image = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+
+        val requestBody = okhttp3.MultipartBody.Builder()
+            .setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("key", apiKey)
+            .addFormDataPart("image", base64Image)
+            .build()
+
+        val request = okhttp3.Request.Builder()
+            .url("https://api.imgbb.com/1/upload")
+            .post(requestBody)
+            .build()
+
+        val client = okhttp3.OkHttpClient()
+        val response = client.newCall(request).execute()
+
+        val responseJson = response.body?.string()
+        val jsonObj = org.json.JSONObject(responseJson!!)
+        jsonObj.getJSONObject("data").getString("url")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+
+fun uploadPostToFirebase(
+    newsData: NewsData,
+    imageUrl: String,
+    context: Context,
+    onComplete: () -> Unit
+) {
+    val databaseRef = FirebaseDatabase.getInstance().reference
+    val userEmail = UserPrefs.getEmail(context).replace(".", ",")
+    val userName = UserPrefs.getName(context)
+    val newsId = databaseRef.child("NewsPosts").push().key ?: return
+
+    val newsMap = mapOf(
+        "newsId" to newsId,
+        "newsTitle" to newsData.newsTitle,
+        "newsCategory" to newsData.newsCategory,
+        "newsContent" to newsData.newsContent,
+        "imageUrl" to imageUrl,
+        "place" to newsData.place,
+        "date" to newsData.date,
+        "timestamp" to System.currentTimeMillis(),
+        "author" to userName
+    )
+
+    databaseRef.child("NewsPosts/$userEmail/$newsId")
+        .setValue(newsMap)
+        .addOnSuccessListener {
+            Toast.makeText(context, "Post Uploaded Successfully!", Toast.LENGTH_SHORT).show()
+            onComplete()
+        }
+        .addOnFailureListener {
+            Toast.makeText(context, "Failed to upload post!", Toast.LENGTH_SHORT).show()
+            onComplete()
         }
 }

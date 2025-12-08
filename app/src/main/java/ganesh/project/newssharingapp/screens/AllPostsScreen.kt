@@ -1,6 +1,7 @@
 package ganesh.project.newssharingapp.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,6 +56,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import ganesh.project.newssharingapp.R
+import ganesh.project.newssharingapp.UserPrefs
 import ganesh.project.newssharingapp.savenews.SavedNewsViewModel
 import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 
@@ -153,6 +155,219 @@ fun getAllPosts(
 
 @Composable
 fun AllPostsCard(
+    post: NewsPost,
+    isSaved: Boolean,
+    onToggleSave: (NewsPost) -> Unit
+) {
+
+    val context = LocalContext.current
+    val userEmail = UserPrefs.getEmail(context).replace(".", ",")  // You must add this field in NewsPost OR pass separately
+
+    var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
+    var isCommentsLoaded by remember { mutableStateOf(false) }
+
+    // Load comments
+    LaunchedEffect(post.newsId) {
+        getCommentsForPost(userEmail, post.newsId) {
+            comments = it
+            isCommentsLoaded = true
+        }
+    }
+
+    // Dialog states
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showViewDialog by remember { mutableStateOf(false) }
+    var commentInput by remember { mutableStateOf("") }
+
+    // ------------------ CARD ---------------------
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFECE5FF)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+
+        Column {
+
+            // ------------------ IMAGE SECTION ---------------------
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            ) {
+
+                AsyncImage(
+                    model = post.imageUrl,
+                    contentDescription = "",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                IconButton(
+                    onClick = { onToggleSave(post) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        contentDescription = "",
+                        tint = Color.White
+                    )
+                }
+
+                Text(
+                    text = post.newsCategory,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
+                        .padding(6.dp)
+                )
+
+                Text(
+                    text = post.date,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
+                        .padding(6.dp)
+                )
+            }
+
+            // ------------------ DETAILS ---------------------
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Text(post.newsTitle, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Person, contentDescription = "", tint = Color.Gray, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(post.author, color = Color.Gray, fontSize = 13.sp)
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                Text(post.place, color = Color.DarkGray, fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+
+                Text(post.newsContent, maxLines = 3, overflow = TextOverflow.Ellipsis)
+
+                Spacer(Modifier.height(12.dp))
+
+                // ------------------ COMMENTS SECTION ---------------------
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+
+                    // Comments count
+                    Text(
+                        text = "💬 ${comments.size} Comments",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+
+                    Spacer(Modifier.width(16.dp))
+
+                    // Add comment
+                    Text(
+                        text = "Add Comment",
+                        color = Color(0xFF3F51B5),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { showAddDialog = true }
+                    )
+
+                    Spacer(Modifier.width(16.dp))
+
+                    // View comments
+                    if (comments.isNotEmpty()) {
+                        Text(
+                            text = "View",
+                            color = Color(0xFF009688),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { showViewDialog = true }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------ ADD COMMENT DIALOG ---------------------
+    if (showAddDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add Comment") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = commentInput,
+                    onValueChange = { commentInput = it },
+                    placeholder = { Text("Write your comment...") }
+                )
+            },
+            confirmButton = {
+                Text(
+                    text = "Post",
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable {
+                            addCommentToPost(
+                                context = context,
+                                userEmail = userEmail,
+                                newsId = post.newsId,
+                                commentText = commentInput
+                            ) {
+                                showAddDialog = false
+                                commentInput = ""
+                            }
+                        }
+                )
+            },
+            dismissButton = {
+                Text(
+                    text = "Cancel",
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable { showAddDialog = false }
+                )
+            }
+        )
+    }
+
+    // ------------------ VIEW COMMENTS DIALOG ---------------------
+    if (showViewDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showViewDialog = false },
+            title = { Text("Comments") },
+            text = {
+                LazyColumn(modifier = Modifier.height(250.dp)) {
+                    items(comments) { comment ->
+                        Column(Modifier.padding(8.dp)) {
+                            Text("👤 ${comment.author}", fontWeight = FontWeight.Bold)
+                            Text(comment.comment)
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Text(
+                    "Close",
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable { showViewDialog = false }
+                )
+            }
+        )
+    }
+}
+
+
+@Composable
+fun AllPostsCardOld(
     post: NewsPost,
     isSaved: Boolean,
     onToggleSave: (NewsPost) -> Unit

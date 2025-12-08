@@ -1,5 +1,6 @@
 package ganesh.project.newssharingapp
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -9,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +44,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.google.firebase.database.FirebaseDatabase
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import kotlin.jvm.java
 
 
@@ -61,6 +66,31 @@ fun RegistrationScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
 
     val context = LocalContext.current.findActivity()
+
+    val context1 = LocalContext.current
+
+    var dobDate by remember { mutableStateOf("") }
+
+
+    val calendar = Calendar.getInstance()
+    val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
+    fun openDatePicker(onSelect: (String) -> Unit, minDate: Long? = null) {
+        val dp = DatePickerDialog(
+            context1,
+            { _, year, month, day ->
+                val c = Calendar.getInstance().apply {
+                    set(year, month, day)
+                }
+                onSelect(dateFormat.format(c.time))
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        if (minDate != null) dp.datePicker.minDate = minDate
+        dp.show()
+    }
 
 
     Column(
@@ -113,6 +143,47 @@ fun RegistrationScreen(navController: NavController) {
         )
 
         Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedTextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            colors = TextFieldDefaults.colors(
+                unfocusedContainerColor = colorResource(R.color.tran_white),
+                focusedContainerColor = colorResource(R.color.tran_white),
+                unfocusedTextColor = Color.White,
+            ),
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Enter Name") },
+            textStyle = TextStyle(color = colorResource(id = R.color.white)),
+            leadingIcon = {
+                Image(
+                    painter = painterResource(R.drawable.email),
+                    contentDescription = ""
+
+                )
+            },
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        DOBDateField(
+            label = "Date of Birth",
+            value = dobDate,
+            onClick = {
+                val today = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+
+                openDatePicker({ dobDate = it }, today)
+            }
+        )
+
+        Spacer(Modifier.height(6.dp))
 
         OutlinedTextField(
             modifier = Modifier
@@ -194,6 +265,9 @@ fun RegistrationScreen(navController: NavController) {
                         name.isEmpty() -> {
                             Toast.makeText(context, " Please Enter Name", Toast.LENGTH_SHORT).show()
                         }
+                        dobDate.isBlank() ->{
+                            Toast.makeText(context, " Please Select DOB", Toast.LENGTH_SHORT).show()
+                        }
 
                         city.isEmpty() -> {
                             Toast.makeText(context, " Please Enter City", Toast.LENGTH_SHORT).show()
@@ -212,6 +286,7 @@ fun RegistrationScreen(navController: NavController) {
 
                             val userData = UserData(
                                 fullname = name,
+                                dob = dobDate,
                                 email = email,
                                 city = city,
                                 password = password
@@ -315,8 +390,33 @@ fun RegistrationScreen(navController: NavController) {
     }
 }
 
+@Composable
+fun DOBDateField(label: String, value: String, onClick: () -> Unit) {
+    Column {
+        Text(label, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(6.dp))
+
+        Box {
+            OutlinedTextField(
+                value = value,
+                onValueChange = {},
+                readOnly = true,
+                placeholder = { Text("Select $label") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Color.Transparent)
+                    .clickable { onClick() }
+            )
+        }
+    }
+}
+
 data class UserData(
     val fullname: String = "",
+    val dob: String = "",
     val email: String = "",
     val city: String = "",
     val password: String = ""

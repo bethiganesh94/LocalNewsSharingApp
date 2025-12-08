@@ -1,6 +1,7 @@
 package ganesh.project.newssharingapp.screens
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -76,12 +77,15 @@ data class NewsPost(
 )
 
 
+
 fun getMyPosts(
     context: Context,
     onResult: (List<NewsPost>) -> Unit
 ) {
     val userEmail = UserPrefs.getEmail(context).replace(".", ",")
     val databaseRef = FirebaseDatabase.getInstance().reference
+
+    Log.e("Test","Getting posts of $userEmail")
 
     databaseRef.child("NewsPosts").child(userEmail)
         .addValueEventListener(object : ValueEventListener {

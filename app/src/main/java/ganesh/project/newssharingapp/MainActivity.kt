@@ -34,6 +34,8 @@ import androidx.navigation.compose.rememberNavController
 import ganesh.project.newssharingapp.screens.AllPostsScreen
 import ganesh.project.newssharingapp.screens.CreatePostScreen
 import ganesh.project.newssharingapp.screens.MyPostsScreen
+import ganesh.project.newssharingapp.screens.PostDetailsScreen
+import ganesh.project.newssharingapp.screens.ProfileScreen
 import ganesh.project.newssharingapp.screens.SavedNewsScreen
 import kotlinx.coroutines.delay
 
@@ -72,6 +74,10 @@ fun MyAppNavGraph() {
             HomeScreen(navController = navController)
         }
 
+        composable(AppScreens.Profile.route) {
+            ProfileScreen(navController = navController)
+        }
+
         composable(AppScreens.CreatePost.route) {
             CreatePostScreen(navController = navController)
         }
@@ -87,6 +93,12 @@ fun MyAppNavGraph() {
         composable(AppScreens.SavedPosts.route) {
             SavedNewsScreen(navController = navController)
         }
+
+        composable("post_details/{newsId}") { backStackEntry ->
+            val newsId = backStackEntry.arguments?.getString("newsId") ?: ""
+            PostDetailsScreen(newsId = newsId, navController = navController)
+        }
+
 
 
 

@@ -17,6 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -34,6 +39,8 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,6 +60,8 @@ fun LoginScreenPreview() {
 fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
 
     val context = LocalContext.current.findActivity()
 
@@ -122,13 +131,18 @@ fun LoginScreen(navController: NavController) {
             onValueChange = { password = it },
             label = { Text("Enter Password") },
             textStyle = TextStyle(color = colorResource(id = R.color.white)),
-            leadingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.password),
-                    contentDescription = ""
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible)
+                    Icons.Filled.Visibility
+                else Icons.Filled.VisibilityOff
 
-                )
-            },
+                val description = if (passwordVisible) "Hide password" else "Show password"
+
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, description)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -223,6 +237,40 @@ fun LoginScreen(navController: NavController) {
                 color = Color.White,
             )
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+
+            Text(
+                modifier = Modifier,
+                text = "Lost Password?  ",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = colorResource(id = R.color.white),
+                )
+            )
+
+
+            Text(
+                modifier = Modifier
+                    .clickable {
+                        navController.navigate(AppScreens.ForgotPassword.route) {
+                            popUpTo(AppScreens.Login.route) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                text = "Reset Now",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = colorResource(id = R.color.white),
+                )
+            )
+
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
