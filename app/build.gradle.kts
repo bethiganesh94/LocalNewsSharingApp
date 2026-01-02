@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "ganesh.project.newssharingapp"
+    namespace = "s3359881.ganeshbethi.newssharingapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "ganesh.project.newssharingapp"
+        applicationId = "s3359881.ganeshbethi.newssharingapp"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
