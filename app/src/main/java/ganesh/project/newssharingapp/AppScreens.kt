@@ -13,4 +13,7 @@ sealed class AppScreens(val route: String) {
     object AllPosts : AppScreens("all_posts")
     object SavedPosts : AppScreens("saved_posts")
 
+    object AboutUs : AppScreens("aboutus")
+    object ContactUs : AppScreens("contactus")
+
 }

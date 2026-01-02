@@ -52,7 +52,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import ganesh.project.newssharingapp.R
-import ganesh.project.newssharingapp.UserPrefs
+import ganesh.project.newssharingapp.UserAccountPrefs
 import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 
 
@@ -82,7 +82,7 @@ fun getMyPosts(
     context: Context,
     onResult: (List<NewsPost>) -> Unit
 ) {
-    val userEmail = UserPrefs.getEmail(context).replace(".", ",")
+    val userEmail = UserAccountPrefs.getEmail(context).replace(".", ",")
     val databaseRef = FirebaseDatabase.getInstance().reference
 
     Log.e("Test","Getting posts of $userEmail")
@@ -107,7 +107,7 @@ fun deletePost(
     postId: String,
     onDeleted: () -> Unit
 ) {
-    val userEmail = UserPrefs.getEmail(context).replace(".", ",")
+    val userEmail = UserAccountPrefs.getEmail(context).replace(".", ",")
     val databaseRef = FirebaseDatabase.getInstance().reference
 
     databaseRef.child("NewsPosts").child(userEmail).child(postId)
@@ -129,7 +129,6 @@ fun MyPostsScreen(navController: NavController) {
     val context = LocalContext.current
     var postList by remember { mutableStateOf<List<NewsPost>>(emptyList()) }
 
-    // Load posts on screen open
     LaunchedEffect(Unit) {
         getMyPosts(context) { posts ->
             postList = posts
@@ -211,7 +210,6 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
                     .height(200.dp)
             ) {
 
-                // Background Image
                 AsyncImage(
                     model = post.imageUrl,
                     contentDescription = "",
@@ -219,7 +217,6 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // DELETE BUTTON (Top Right)
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier
@@ -235,7 +232,6 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
                     )
                 }
 
-                // CATEGORY (Bottom Left)
                 Text(
                     text = post.newsCategory,
                     color = Color.White,
@@ -247,7 +243,6 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
 
-                // DATE (Bottom Right)
                 Text(
                     text = post.date,
                     color = Color.White,
@@ -259,10 +254,8 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
                 )
             }
 
-            // CONTENT AREA BELOW IMAGE
             Column(modifier = Modifier.padding(16.dp)) {
 
-                // TITLE
                 Text(
                     text = post.newsTitle,
                     style = MaterialTheme.typography.titleMedium,
@@ -271,7 +264,6 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // PLACE
                 Text(
                     text = post.place,
                     style = MaterialTheme.typography.bodySmall,
@@ -280,7 +272,6 @@ fun PostCard(post: NewsPost, onDelete: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // DESCRIPTION
                 Text(
                     text = post.newsContent,
                     maxLines = 3,

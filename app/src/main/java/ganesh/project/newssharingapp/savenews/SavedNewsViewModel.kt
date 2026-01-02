@@ -16,7 +16,7 @@ class SavedNewsViewModel(context: Context) : ViewModel() {
     private val repo = SavedNewsRepository(dao)
 
     var savedList by mutableStateOf<List<SavedNewsEntity>>(emptyList())
-    var savedMap = mutableStateMapOf<String, Boolean>()  // Track saved state
+    var savedMap = mutableStateMapOf<String, Boolean>()
 
     init {
         loadSaved()

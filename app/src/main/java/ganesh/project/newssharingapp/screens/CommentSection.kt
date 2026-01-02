@@ -5,7 +5,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import ganesh.project.newssharingapp.UserPrefs
+import ganesh.project.newssharingapp.UserAccountPrefs
 
 data class Comment(
     val commentId: String = "",
@@ -43,7 +43,7 @@ fun addCommentToPost(
 ) {
     val db = FirebaseDatabase.getInstance().reference
     val commentId = db.push().key ?: return
-    val authorName = UserPrefs.getName(context)
+    val authorName = UserAccountPrefs.getName(context)
 
     val comment = Comment(
         commentId = commentId,

@@ -168,7 +168,9 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
                 onLocalNewsClick = { navController.navigate(AppScreens.AllPosts.route) },
                 onSavedNewsClick = { navController.navigate(AppScreens.SavedPosts.route) },
                 onCreatePostClick = { navController.navigate(AppScreens.CreatePost.route) },
-                onMyPostsClick = { navController.navigate(AppScreens.MyPosts.route) }
+                onMyPostsClick = { navController.navigate(AppScreens.MyPosts.route) },
+                onAboutUsClick = { navController.navigate(AppScreens.AboutUs.route) },
+                onContactUsClick = { navController.navigate(AppScreens.ContactUs.route) }
             )
         }
     }
@@ -216,7 +218,6 @@ fun MyPostsSlider(posts: List<NewsPost>, navController: NavController) {
                 modifier = Modifier.fillMaxSize()
             )
 
-            // TITLE BAR
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -233,7 +234,6 @@ fun MyPostsSlider(posts: List<NewsPost>, navController: NavController) {
                 )
             }
 
-            // READ ARTICLE BUTTON (Transparent Black)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -265,7 +265,10 @@ fun HomeOptionsGrid(
     onLocalNewsClick: () -> Unit = {},
     onSavedNewsClick: () -> Unit = {},
     onCreatePostClick: () -> Unit = {},
-    onMyPostsClick: () -> Unit = {}
+    onMyPostsClick: () -> Unit = {},
+    onAboutUsClick: () -> Unit = {},
+    onContactUsClick: () -> Unit = {}
+
 ) {
 
     Column(
@@ -311,6 +314,26 @@ fun HomeOptionsGrid(
                 onClick = onMyPostsClick
             )
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OptionCard(
+                title = "About Us",
+                image = R.drawable.ic_aboutus,
+                modifier = Modifier.weight(1f),
+                onClick = onAboutUsClick
+            )
+            OptionCard(
+                title = "Contact Us",
+                image = R.drawable.ic_contactus,
+                modifier = Modifier.weight(1f),
+                onClick = onContactUsClick
+            )
+        }
     }
 }
 
@@ -328,7 +351,7 @@ fun OptionCard(
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFECE5FF)
         ),
-        modifier = modifier   // <-- weight is passed from parent
+        modifier = modifier
             .height(150.dp)
             .clickable { onClick() }
     ) {

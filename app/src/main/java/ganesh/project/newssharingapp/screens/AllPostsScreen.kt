@@ -56,7 +56,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import ganesh.project.newssharingapp.R
-import ganesh.project.newssharingapp.UserPrefs
+import ganesh.project.newssharingapp.UserAccountPrefs
 import ganesh.project.newssharingapp.savenews.SavedNewsViewModel
 import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 
@@ -66,7 +66,6 @@ fun AllPostsScreen(navController: NavController) {
 
     val context = LocalContext.current
 
-    // ViewModel for saving
     val saveViewModel: SavedNewsViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return SavedNewsViewModel(context) as T
@@ -75,7 +74,6 @@ fun AllPostsScreen(navController: NavController) {
 
     var postsList by remember { mutableStateOf<List<NewsPost>>(emptyList()) }
 
-    // Fetch all posts
     LaunchedEffect(Unit) {
         getAllPosts { list -> postsList = list }
     }
@@ -84,7 +82,7 @@ fun AllPostsScreen(navController: NavController) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text("All Posts", color = MaterialTheme.colorScheme.onTertiary)
+                    Text("Local News", color = MaterialTheme.colorScheme.onTertiary)
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -161,25 +159,20 @@ fun AllPostsCard(
 ) {
 
     val context = LocalContext.current
-    val userEmail = UserPrefs.getEmail(context).replace(".", ",")  // You must add this field in NewsPost OR pass separately
+    val userEmail = UserAccountPrefs.getEmail(context).replace(".", ",")  // You must add this field in NewsPost OR pass separately
 
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
-    var isCommentsLoaded by remember { mutableStateOf(false) }
 
-    // Load comments
     LaunchedEffect(post.newsId) {
         getCommentsForPost(userEmail, post.newsId) {
             comments = it
-            isCommentsLoaded = true
         }
     }
 
-    // Dialog states
     var showAddDialog by remember { mutableStateOf(false) }
     var showViewDialog by remember { mutableStateOf(false) }
     var commentInput by remember { mutableStateOf("") }
 
-    // ------------------ CARD ---------------------
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFECE5FF)),
@@ -188,7 +181,6 @@ fun AllPostsCard(
 
         Column {
 
-            // ------------------ IMAGE SECTION ---------------------
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -238,7 +230,6 @@ fun AllPostsCard(
                 )
             }
 
-            // ------------------ DETAILS ---------------------
             Column(modifier = Modifier.padding(16.dp)) {
 
                 Text(post.newsTitle, fontWeight = FontWeight.Bold)
@@ -259,7 +250,6 @@ fun AllPostsCard(
 
                 Spacer(Modifier.height(12.dp))
 
-                // ------------------ COMMENTS SECTION ---------------------
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
 
@@ -272,7 +262,6 @@ fun AllPostsCard(
 
                     Spacer(Modifier.width(16.dp))
 
-                    // Add comment
                     Text(
                         text = "Add Comment",
                         color = Color(0xFF3F51B5),
@@ -296,7 +285,6 @@ fun AllPostsCard(
         }
     }
 
-    // ------------------ ADD COMMENT DIALOG ---------------------
     if (showAddDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showAddDialog = false },
@@ -337,7 +325,6 @@ fun AllPostsCard(
         )
     }
 
-    // ------------------ VIEW COMMENTS DIALOG ---------------------
     if (showViewDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showViewDialog = false },
@@ -365,105 +352,5 @@ fun AllPostsCard(
     }
 }
 
-
-@Composable
-fun AllPostsCardOld(
-    post: NewsPost,
-    isSaved: Boolean,
-    onToggleSave: (NewsPost) -> Unit
-) {
-
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFECE5FF)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-
-        Column {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            ) {
-
-                AsyncImage(
-                    model = post.imageUrl,
-                    contentDescription = "",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Toggle Save Icon (Top Right)
-                IconButton(
-                    onClick = { onToggleSave(post) },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = "",
-                        tint = Color.White
-                    )
-                }
-
-                // CATEGORY bottom-left
-                Text(
-                    text = post.newsCategory,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-
-                // DATE bottom-right
-                Text(
-                    text = post.date,
-                    color = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-
-            // Content Below Image
-            Column(modifier = Modifier.padding(16.dp)) {
-
-                Text(post.newsTitle, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(4.dp))
-
-                // Author Below Title
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(post.author, color = Color.Gray, fontSize = 13.sp)
-                }
-
-                Spacer(Modifier.height(6.dp))
-
-                Text(post.place, color = Color.DarkGray, fontSize = 13.sp)
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    post.newsContent,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
 
 

@@ -178,14 +178,15 @@ fun LoginScreen(navController: NavController) {
                                         newsData?.let {
                                             if (userPassword == it.password) {
 
-                                                UserPrefs.markLoginStatus(context1, true)
-                                                UserPrefs.saveEmail(
+                                                UserAccountPrefs.markLoginStatus(context1, true)
+                                                UserAccountPrefs.saveEmail(
                                                     context1,
-                                                    email = userEmail
+                                                    email = it.email
                                                 )
-                                                UserPrefs.saveName(context1, it.fullname)
-
-
+                                                UserAccountPrefs.saveName(context1, it.fullname)
+                                                UserAccountPrefs.saveDOB(context1, it.dob)
+                                                UserAccountPrefs.savCity(context1, it.city)
+                                                UserAccountPrefs.saveProfileImage(context1,it.profileImage)
 
                                                 Toast.makeText(
                                                     context,

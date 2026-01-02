@@ -125,7 +125,6 @@ fun ResetPasswordScreen(navController: NavController) {
 
             Spacer(Modifier.height(20.dp))
 
-            // STEP 1 -> EMAIL + DOB
             if (!step2) {
 
                 OutlinedTextField(
@@ -213,7 +212,6 @@ fun ResetPasswordScreen(navController: NavController) {
                 )
             }
 
-            // STEP 2 -> ENTER NEW PASSWORD
             if (step2) {
 
                 OutlinedTextField(

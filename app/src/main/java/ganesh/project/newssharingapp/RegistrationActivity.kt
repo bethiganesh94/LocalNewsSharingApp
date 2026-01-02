@@ -14,8 +14,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Password
+import androidx.compose.material.icons.outlined.PermIdentity
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -87,10 +97,8 @@ fun RegistrationScreen(navController: NavController) {
             calendar.get(Calendar.DAY_OF_MONTH)
         )
 
-        // Allow selecting date from minimum date
         minDate?.let { dp.datePicker.minDate = it }
 
-        // Allow selecting date up to maximum date
         maxDate?.let { dp.datePicker.maxDate = it }
 
         dp.show()
@@ -124,29 +132,6 @@ fun RegistrationScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            colors = TextFieldDefaults.colors(
-                unfocusedContainerColor = colorResource(R.color.tran_white),
-                focusedContainerColor = colorResource(R.color.tran_white),
-                unfocusedTextColor = Color.White,
-            ),
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Enter Name") },
-            textStyle = TextStyle(color = colorResource(id = R.color.white)),
-            leadingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.email),
-                    contentDescription = ""
-
-                )
-            },
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
 
         OutlinedTextField(
             modifier = Modifier
@@ -162,12 +147,13 @@ fun RegistrationScreen(navController: NavController) {
             label = { Text("Enter Name") },
             textStyle = TextStyle(color = colorResource(id = R.color.white)),
             leadingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.email),
-                    contentDescription = ""
-
+                Icon(
+                    imageVector = Icons.Filled.AccountCircle,
+                    contentDescription = "Name",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp)
                 )
-            },
+            }
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -196,10 +182,11 @@ fun RegistrationScreen(navController: NavController) {
             label = { Text("Enter City") },
             textStyle = TextStyle(color = colorResource(id = R.color.white)),
             leadingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.email),
-                    contentDescription = ""
-
+                Icon(
+                    imageVector = Icons.Filled.Map,
+                    contentDescription = "City",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp)
                 )
             },
         )
@@ -220,10 +207,11 @@ fun RegistrationScreen(navController: NavController) {
             label = { Text("Enter Email") },
             textStyle = TextStyle(color = colorResource(id = R.color.white)),
             leadingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.email),
-                    contentDescription = ""
-
+                Icon(
+                    imageVector = Icons.Filled.Email,
+                    contentDescription = "Email",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp)
                 )
             },
         )
@@ -245,10 +233,11 @@ fun RegistrationScreen(navController: NavController) {
             label = { Text("Enter Password") },
             textStyle = TextStyle(color = colorResource(id = R.color.white)),
             leadingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.password),
-                    contentDescription = ""
-
+                Icon(
+                    imageVector = Icons.Filled.Password,
+                    contentDescription = "Password",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp)
                 )
             },
         )
@@ -392,7 +381,6 @@ fun RegistrationScreen(navController: NavController) {
 @Composable
 fun DOBDateField(label: String, value: String, onClick: () -> Unit) {
     Column {
-        Text(label, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(6.dp))
 
         Box {
@@ -401,7 +389,22 @@ fun DOBDateField(label: String, value: String, onClick: () -> Unit) {
                 onValueChange = {},
                 readOnly = true,
                 placeholder = { Text("Select $label") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = colorResource(R.color.tran_white),
+                    focusedContainerColor = colorResource(R.color.tran_white),
+                    unfocusedTextColor = Color.White,
+                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.DateRange,
+                        contentDescription = "DOB",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             )
             Box(
                 Modifier
@@ -413,10 +416,12 @@ fun DOBDateField(label: String, value: String, onClick: () -> Unit) {
     }
 }
 
+
 data class UserData(
     val fullname: String = "",
     val dob: String = "",
     val email: String = "",
     val city: String = "",
-    val password: String = ""
+    val password: String = "",
+    val profileImage: String = ""
 )

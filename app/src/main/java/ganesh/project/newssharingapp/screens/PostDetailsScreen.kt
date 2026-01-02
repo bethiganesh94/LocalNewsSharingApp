@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
@@ -27,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -41,15 +39,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.database.FirebaseDatabase
-import ganesh.project.newssharingapp.R
-import ganesh.project.newssharingapp.UserPrefs
+import ganesh.project.newssharingapp.UserAccountPrefs
 import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,9 +57,8 @@ fun PostDetailsScreen(
     val context = LocalContext.current
     var post by remember { mutableStateOf<NewsPost?>(null) }
 
-    // Fetch post details
     LaunchedEffect(newsId) {
-        val userEmail = UserPrefs.getEmail(context).replace(".", ",")
+        val userEmail = UserAccountPrefs.getEmail(context).replace(".", ",")
         val dbRef = FirebaseDatabase.getInstance().reference
 
         dbRef.child("NewsPosts").child(userEmail).child(newsId)
@@ -105,7 +100,6 @@ fun PostDetailsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // IMAGE BANNER
             AsyncImage(
                 model = data.imageUrl,
                 contentDescription = "",
@@ -119,7 +113,6 @@ fun PostDetailsScreen(
 
             Column(modifier = Modifier.padding(16.dp)) {
 
-                // Category tag
                 Box(
                     modifier = Modifier
                         .background(Color(0xFFEEE5FF), RoundedCornerShape(8.dp))
@@ -130,7 +123,6 @@ fun PostDetailsScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // TITLE
                 Text(
                     text = data.newsTitle,
                     fontSize = 22.sp,
@@ -139,7 +131,6 @@ fun PostDetailsScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // AUTHOR + DATE
                 Row(verticalAlignment = Alignment.CenterVertically) {
 
                     Icon(
@@ -173,7 +164,6 @@ fun PostDetailsScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // PLACE
                 Row(verticalAlignment = Alignment.CenterVertically) {
 
                     Icon(
@@ -192,7 +182,6 @@ fun PostDetailsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // DESCRIPTION
                 Text(
                     text = data.newsContent,
                     fontSize = 16.sp,

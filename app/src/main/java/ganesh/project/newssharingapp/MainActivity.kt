@@ -31,7 +31,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import ganesh.project.newssharingapp.screens.AboutAppScreen
 import ganesh.project.newssharingapp.screens.AllPostsScreen
+import ganesh.project.newssharingapp.screens.ContactUsScreen
 import ganesh.project.newssharingapp.screens.CreatePostScreen
 import ganesh.project.newssharingapp.screens.MyPostsScreen
 import ganesh.project.newssharingapp.screens.PostDetailsScreen
@@ -72,6 +74,18 @@ fun MyAppNavGraph() {
 
         composable(AppScreens.Home.route) {
             HomeScreen(navController = navController)
+        }
+
+        composable(AppScreens.AboutUs.route) {
+            AboutAppScreen(navController = navController)
+        }
+
+        composable(AppScreens.ContactUs.route) {
+            ContactUsScreen(navController = navController)
+        }
+
+        composable(AppScreens.ForgotPassword.route) {
+            ResetPasswordScreen(navController = navController)
         }
 
         composable(AppScreens.Profile.route) {
@@ -115,7 +129,7 @@ fun LoadingScreenCheck(navController: NavController) {
     LaunchedEffect(Unit) {
         delay(3000)
 
-        if (UserPrefs.checkLoginStatus(context)) {
+        if (UserAccountPrefs.checkLoginStatus(context)) {
             navController.navigate(AppScreens.Home.route) {
                 popUpTo(AppScreens.Splash.route) {
                     inclusive = true

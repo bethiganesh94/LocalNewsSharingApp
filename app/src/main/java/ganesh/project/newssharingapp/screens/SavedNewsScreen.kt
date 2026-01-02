@@ -47,7 +47,6 @@ import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 class SavedNewsViewModelFactory(private val context: android.content.Context) :
     ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        // Suppress unchecked cast warning; ensure you return the right VM
         @Suppress("UNCHECKED_CAST")
         return SavedNewsViewModel(context) as T
     }
@@ -58,10 +57,8 @@ class SavedNewsViewModelFactory(private val context: android.content.Context) :
 fun SavedNewsScreen(
     navController: NavController
 ) {
-    // Get context in composable scope
     val context = LocalContext.current
 
-    // Create the ViewModel with factory inside the body (safe)
     val viewModel: SavedNewsViewModel = viewModel(
         factory = SavedNewsViewModelFactory(context)
     )

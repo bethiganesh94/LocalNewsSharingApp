@@ -64,7 +64,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import ganesh.project.newssharingapp.R
-import ganesh.project.newssharingapp.UserPrefs
+import ganesh.project.newssharingapp.UserAccountPrefs
 import ganesh.project.newssharingapp.ui.theme.Main_BG_Color
 import ganesh.project.newssharingapp.ui.theme.Purple40
 import kotlinx.coroutines.Dispatchers
@@ -212,7 +212,6 @@ fun CreatePostScreen(navController: NavController) {
                 }
             )
 
-            // Image Selection
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
@@ -245,7 +244,6 @@ fun CreatePostScreen(navController: NavController) {
 
             Spacer(Modifier.height(16.dp))
 
-            // POST BUTTON
             Button(
                 onClick = {
                     if (headline.isBlank() || selectedCategory.isBlank() || place.isBlank() || description.isBlank() || date.isBlank()) {
@@ -257,7 +255,6 @@ fun CreatePostScreen(navController: NavController) {
                     } else {
                         isUploading = true
 
-                        // Upload process
                         val newsData = NewsData(
                             newsTitle = headline,
                             newsCategory = selectedCategory,
@@ -266,12 +263,10 @@ fun CreatePostScreen(navController: NavController) {
                             date = date
                         )
 
-                        // Coroutine launch
 
                         coroutineScope.launch {
 
                             val bytes = readBytesFromUri(photoUri!!, context.contentResolver)
-                            // Convert to Base64 (ImgBB expects base64 without data URI prefix)
                             val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
 
                             val imageUrl = uploadToImgBB(base64)
@@ -306,13 +301,7 @@ fun CreatePostScreen(navController: NavController) {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun CreatePostScreenPreview() {
-    MaterialTheme {
-//        CreatePostScreen(navController = NavHostController(LocalContext.current))
-    }
-}
+
 
 
 data class NewsData(
@@ -326,96 +315,6 @@ data class NewsData(
     var author: String = ""
 )
 
-fun uploadNewsWithImage(
-    newsData: NewsData,
-    selectedImageUri: Uri,
-    context: Context
-) {
-    val storageRef = FirebaseStorage.getInstance().reference
-    val databaseRef = FirebaseDatabase.getInstance().reference
-    val userName = UserPrefs.getName(context)
-    val userEmail = UserPrefs.getEmail(context).replace(".", ",")
-
-
-    val newsId = databaseRef.child("NewsPosts").push().key ?: return
-    val imageRef = storageRef.child("NewsPosts/$newsId/news_image.jpg")
-    imageRef.putFile(selectedImageUri)
-        .continueWithTask { task ->
-            if (!task.isSuccessful) {
-                task.exception?.let { throw it }
-            }
-            imageRef.downloadUrl
-        }
-        .addOnSuccessListener { downloadUri ->
-            val newsMap = mapOf(
-                "newsId" to newsId,
-                "newsTitle" to newsData.newsTitle,
-                "newsCategory" to newsData.newsCategory,
-                "newsContent" to newsData.newsContent,
-                "imageUrl" to downloadUri.toString(),
-                "place" to newsData.place,
-                "date" to newsData.date,
-                "timestamp" to System.currentTimeMillis(),
-                "author" to userName
-            )
-
-            databaseRef.child("NewsPosts/$userEmail").child(newsId)
-                .setValue(newsMap)
-                .addOnSuccessListener {
-                    Toast.makeText(context, "Posted News Successfully.", Toast.LENGTH_SHORT).show()
-                    (context as Activity).finish()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(context, "Failed to save news.", Toast.LENGTH_SHORT).show()
-                }
-        }
-        .addOnFailureListener {
-            Toast.makeText(context, "Failed to upload image.", Toast.LENGTH_SHORT).show()
-        }
-}
-
-fun saveBitmapToCache(context: Context, bitmap: Bitmap): File {
-    val file = File(context.cacheDir, "photo_${System.currentTimeMillis()}.jpg")
-    file.outputStream().use {
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
-    }
-    return file
-}
-
-fun uploadNewsWithImage(
-    newsData: NewsData,
-    context: Context
-) {
-    val databaseRef = FirebaseDatabase.getInstance().reference
-    val userName = UserPrefs.getName(context)
-    val userEmail = UserPrefs.getEmail(context = context).replace(".", ",")
-    val newsId = databaseRef.child("NewsPosts").push().key ?: return
-
-
-    val newsMap = mapOf(
-        "newsId" to newsId,
-        "newsTitle" to newsData.newsTitle,
-        "newsCategory" to newsData.newsCategory,
-        "newsContent" to newsData.newsContent,
-        "imageUrl" to "https://thumbs.dreamstime.com/b/breaking-news-global-updates-insights-wallpaper-366068573.jpg",
-        "place" to newsData.place,
-        "date" to newsData.date,
-        "timestamp" to System.currentTimeMillis(),
-        "author" to userName
-    )
-
-
-    Log.e("test", "1")
-    databaseRef.child("NewsPosts/$userEmail").child(newsId)
-        .setValue(newsMap)
-        .addOnSuccessListener {
-            Toast.makeText(context, "Posted News Successfully.", Toast.LENGTH_SHORT).show()
-//            (context as Activity).finish()
-        }
-        .addOnFailureListener {
-            Toast.makeText(context, "Failed to save news.", Toast.LENGTH_SHORT).show()
-        }
-}
 
 suspend fun readBytesFromUri(uri: Uri, contentResolver: ContentResolver): ByteArray =
     withContext(Dispatchers.IO) {
@@ -430,14 +329,12 @@ suspend fun readBytesFromUri(uri: Uri, contentResolver: ContentResolver): ByteAr
         }
         baos.toByteArray()
     }
-private const val IMGBB_API_KEY = "dd2c6f23d315032050b31f06adcfaf3b" // <- your key (from user)
+private const val IMGBB_API_KEY = "dd2c6f23d315032050b31f06adcfaf3b"
 
-// ----------------- Helper: Upload to ImgBB (returns image URL) -----------------
 suspend fun uploadToImgBB(base64Image: String): String? = withContext(Dispatchers.IO) {
     try {
         val client = OkHttpClient()
 
-        // ImgBB accepts 'image' param as base64 string
         val form = FormBody.Builder()
             .add("key", IMGBB_API_KEY)
             .add("image", base64Image)
@@ -453,44 +350,12 @@ suspend fun uploadToImgBB(base64Image: String): String? = withContext(Dispatcher
             if (!response.isSuccessful) return@withContext null
 
             val json = JSONObject(body)
-            // Look for data -> url or display_url
             val data = json.optJSONObject("data")
             return@withContext data?.optString("url") ?: data?.optString("display_url")
         }
     } catch (e: Exception) {
         e.printStackTrace()
         return@withContext null
-    }
-}
-
-fun uploadToImgBBOld(imageUri: Uri, context: Context): String? {
-    return try {
-        val apiKey = "dd2c6f23d315032050b31f06adcfaf3b"   // <-- Replace with your key
-
-        val inputStream = context.contentResolver.openInputStream(imageUri)
-        val bytes = inputStream?.readBytes() ?: return null
-        val base64Image = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
-
-        val requestBody = okhttp3.MultipartBody.Builder()
-            .setType(okhttp3.MultipartBody.FORM)
-            .addFormDataPart("key", apiKey)
-            .addFormDataPart("image", base64Image)
-            .build()
-
-        val request = okhttp3.Request.Builder()
-            .url("https://api.imgbb.com/1/upload")
-            .post(requestBody)
-            .build()
-
-        val client = okhttp3.OkHttpClient()
-        val response = client.newCall(request).execute()
-
-        val responseJson = response.body?.string()
-        val jsonObj = org.json.JSONObject(responseJson!!)
-        jsonObj.getJSONObject("data").getString("url")
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
 }
 
@@ -502,8 +367,8 @@ fun uploadPostToFirebase(
     onComplete: () -> Unit
 ) {
     val databaseRef = FirebaseDatabase.getInstance().reference
-    val userEmail = UserPrefs.getEmail(context).replace(".", ",")
-    val userName = UserPrefs.getName(context)
+    val userEmail = UserAccountPrefs.getEmail(context).replace(".", ",")
+    val userName = UserAccountPrefs.getName(context)
     val newsId = databaseRef.child("NewsPosts").push().key ?: return
 
     val newsMap = mapOf(
