@@ -1,5 +1,8 @@
 package s3359881.ganeshbethi.newssharingapp
 
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -53,11 +56,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import s3359881.ganeshbethi.newssharingapp.network.NewsViewModel
 import s3359881.ganeshbethi.newssharingapp.screens.NewsPost
 import s3359881.ganeshbethi.newssharingapp.screens.getMyPosts
 import s3359881.ganeshbethi.newssharingapp.ui.theme.Main_BG_Color
 import kotlinx.coroutines.delay
+import s3359881.ganeshbethi.newssharingapp.screens.getAllPosts
 
 @Preview(showBackground = true)
 @Composable
@@ -74,13 +82,11 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
     val newsList = viewModel.newsList
     val isLoading = viewModel.isLoading
 
-    // State for MyPosts Slider
     var myPosts by remember { mutableStateOf<List<NewsPost>>(emptyList()) }
 
-    // Load MyPosts from Firebase
     LaunchedEffect(Unit) {
-        getMyPosts(context) { posts ->
-            myPosts = posts.take(6) // Show only 6 posts
+        getAllPosts(context) { posts ->
+            myPosts = posts.take(6)
         }
     }
 
@@ -121,7 +127,6 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ---------------- TOP NEWS TITLE ----------------
             Text(
                 text = "Top News",
                 style = MaterialTheme.typography.titleLarge,
@@ -131,7 +136,6 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ---------------- TOP NEWS SLIDER ----------------
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(16.dp))
             } else {
@@ -140,7 +144,6 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ---------------- MY POSTS TITLE ----------------
             Text(
                 text = "Local News",
                 style = MaterialTheme.typography.titleLarge,
@@ -150,7 +153,6 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ---------------- MY POSTS SLIDER ----------------
             if (myPosts.isEmpty()) {
                 Text(
                     text = "No posts found.",
@@ -163,7 +165,6 @@ fun HomeScreen(navController: NavController, viewModel: NewsViewModel = viewMode
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ---------------- OPTIONS GRID ----------------
             HomeOptionsGrid(
                 onLocalNewsClick = { navController.navigate(AppScreens.AllPosts.route) },
                 onSavedNewsClick = { navController.navigate(AppScreens.SavedPosts.route) },
@@ -437,6 +438,38 @@ fun AutoSlider(newsList: List<Article>) {
     }
 }
 
+fun getAllPosts(
+    context: Context,
+    onResult: (List<NewsPost>) -> Unit
+) {
+    val databaseRef = FirebaseDatabase.getInstance().reference
+
+    Log.e("Test", "Getting all posts from all users")
+
+    databaseRef.child("NewsPosts")
+        .addValueEventListener(object : ValueEventListener {
+
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+                val allPosts = mutableListOf<NewsPost>()
+
+                snapshot.children.forEach { userNode ->
+                    userNode.children.forEach { postNode ->
+                        val post = postNode.getValue(NewsPost::class.java)
+                        if (post != null) {
+                            allPosts.add(post)
+                        }
+                    }
+                }
+
+                onResult(allPosts.sortedByDescending { it.timestamp }) // Latest first
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(context, "Failed to load posts.", Toast.LENGTH_SHORT).show()
+            }
+        })
+}
 
 data class NewsResponse(
     val articles: List<Article>

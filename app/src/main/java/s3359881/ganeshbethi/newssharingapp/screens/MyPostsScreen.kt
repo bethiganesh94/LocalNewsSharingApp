@@ -78,6 +78,8 @@ data class NewsPost(
 
 
 
+
+
 fun getMyPosts(
     context: Context,
     onResult: (List<NewsPost>) -> Unit
